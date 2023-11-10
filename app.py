@@ -1,9 +1,11 @@
 
-from flask import Flask, redirect, render_template, request, url_for
+from scipy import ndimage
+from flask import Flask, redirect, render_template, request, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 import os
 import matplotlib.pyplot as plt
 import cv2
+import numpy as np
 
 app = Flask(__name__)
 
@@ -215,7 +217,7 @@ def segment():
 
 
 @app.route('/enhancement', methods=['GET', 'POST'])
-def image_enhancement():
+def enhancement():
     if request.method == 'POST':
         file = request.files['img']
         filename = secure_filename(file.filename)
@@ -226,7 +228,7 @@ def image_enhancement():
         img = cv2.imread(img_path)
 
         # Mendapatkan nilai kontras dan kecerahan dari formulir
-        alpha = float(request.form.get('kontras', 1.0))
+        alpha = float(request.form.get('kontras', 2.0))
         beta = float(request.form.get('kecerahan', 0.0))
 
         # Melakukan image enhancement dengan mengatur kontras dan kecerahan
@@ -240,6 +242,194 @@ def image_enhancement():
         return render_template('enhancement.html', img=img_path, img2=enhanced_image_path)
 
     return render_template('enhancement.html')
+
+
+@app.route('/noise', methods=['GET', 'POST'])
+def noise():
+    if request.method == 'POST':
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Membaca gambar dengan OpenCV
+        img = cv2.imread(img_path)
+
+        # Pilih metode reduksi noise (Median Smoothing)
+        kernel_size = 5  # Ukuran kernel untuk Median Blur
+        denoised_img = cv2.medianBlur(img, kernel_size)
+
+        # Menyimpan gambar hasil reduksi noise ke folder "static/uploads"
+        denoised_image_path = os.path.join(
+            app.config['UPLOAD'], 'denoised_image.jpg')
+        cv2.imwrite(denoised_image_path, denoised_img)
+
+        return render_template('noise.html', img=img_path, img2=denoised_image_path)
+
+    return render_template('noise.html')
+
+
+@app.route('/erosion', methods=['GET', 'POST'])
+def erosion():
+    if request.method == 'POST':
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Read the image with OpenCV
+        img = cv2.imread(img_path)
+
+        # Denoise the image
+        denoised_img = cv2.fastNlMeansDenoisingColored(
+            img, None, 10, 10, 7, 21)
+
+        # Resize the image if necessary
+        # resized_img = cv2.resize(denoised_img, (new_width, new_height))
+
+        # Define the kernel erosion
+        kernel_size = int(request.form.get('kernel_size', 7))  # Kernel size
+        kernel_shape = request.form.get(
+            'kernel_shape', 'cv2.MORPH_RECT')  # Kernel shape
+        iterations = int(request.form.get('iterations', 1)
+                         )  # Number of iterations
+        kernel = cv2.getStructuringElement(
+            eval(kernel_shape), (kernel_size, kernel_size))
+        # Perform the erosion operation on the image
+        eroded_img = cv2.erode(denoised_img, kernel, iterations=iterations)
+        # Save the eroded image
+        eroded_image_path = os.path.join(
+            app.config['UPLOAD'], 'eroded_image.jpg')
+        cv2.imwrite(eroded_image_path, eroded_img)
+
+        return render_template('erosion.html', img=img_path, img2=eroded_image_path)
+
+    return render_template('erosion.html')
+
+
+@app.route('/dilation', methods=['GET', 'POST'])
+def dilation():
+    if request.method == 'POST':
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Read the image with OpenCV
+        img = cv2.imread(img_path)
+
+        # Denoise the image
+        denoised_img = cv2.fastNlMeansDenoisingColored(
+            img, None, 10, 10, 7, 21)
+
+        # Resize the image if necessary
+        # resized_img = cv2.resize(denoised_img, (new_width, new_height))
+
+        # Define the kernel dilation
+        kernel_size = int(request.form.get('kernel_size', 7))  # Kernel size
+        kernel_shape = request.form.get(
+            'kernel_shape', 'cv2.MORPH_RECT')  # Kernel shape
+        iterations = int(request.form.get('iterations', 1)
+                         )  # Number of iterations
+        kernel = cv2.getStructuringElement(
+            eval(kernel_shape), (kernel_size, kernel_size))
+
+        # Perform the dilation operation on the image
+        dilated_img = cv2.dilate(denoised_img, kernel, iterations=iterations)
+
+        # Save the dilated image
+        dilated_image_path = os.path.join(
+            app.config['UPLOAD'], 'dilated_image.jpg')
+        cv2.imwrite(dilated_image_path, dilated_img)
+
+        return render_template('dilation.html', img=img_path, img2=dilated_image_path)
+
+    return render_template('dilation.html')
+
+
+@app.route('/bicubic', methods=['GET', 'POST'])
+def bicubic():
+    if request.method == 'POST':
+        # Mendapatkan file gambar dari form
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        # Menyimpan file gambar di direktori upload
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Membaca gambar dengan OpenCV
+        img = cv2.imread(img_path)
+
+        # Mendapatkan faktor skala dari formulir
+        scale_factor = float(request.form.get('scale_factor', 2.0))
+
+        # Menghitung dimensi baru berdasarkan faktor skala
+        new_dimensions = (
+            int(img.shape[1] * scale_factor), int(img.shape[0] * scale_factor))
+
+        # Melakukan interpolasi Bicubic pada gambar
+        img_bicubic = cv2.resize(
+            img, new_dimensions, interpolation=cv2.INTER_CUBIC)
+
+        # Menyimpan gambar hasil interpolasi Bicubic ke folder "static/uploads"
+        bicubic_image_path = os.path.join(
+            app.config['UPLOAD'], 'bicubic_interpolated_image.jpg')
+        cv2.imwrite(bicubic_image_path, img_bicubic)
+
+        # Menampilkan nilai pixel di titik yang dipilih oleh pengguna
+        x = int(request.form.get('x_coordinate', 0))
+        y = int(request.form.get('y_coordinate', 0))
+        pixel_value = img[y, x]
+
+        # Menghitung jumlah pixel di gambar asli dan gambar hasil interpolasi
+        original_pixel_count = img.shape[0] * img.shape[1]
+        bicubic_pixel_count = img_bicubic.shape[0] * img_bicubic.shape[1]
+
+        # Mengembalikan template dengan gambar asli, hasil interpolasi, dan nilai pixel
+        return render_template('bicubic.html', img=img_path, img2=bicubic_image_path, pixel_value=pixel_value, x_coordinate=x, y_coordinate=y, original_pixel_count=original_pixel_count, bicubic_pixel_count=bicubic_pixel_count)
+
+    # Menampilkan form jika metode request adalah GET
+    return render_template('bicubic.html')
+
+
+@app.route('/nearest_neighbor', methods=['GET', 'POST'])
+def nearest_neighbor():
+    if request.method == 'POST':
+        # Mendapatkan file gambar dari form
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        # Menyimpan file gambar di direktori upload
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Membaca gambar dengan OpenCV
+        img = cv2.imread(img_path)
+
+        # Mendapatkan faktor skala dari formulir
+        scale_factor = float(request.form.get('scale_factor', 2.0))
+
+        # Menghitung dimensi baru berdasarkan faktor skala
+        new_dimensions = (
+            int(img.shape[1] * scale_factor), int(img.shape[0] * scale_factor))
+
+        # Melakukan interpolasi Nearest Neighbor pada gambar
+        img_nearest = cv2.resize(
+            img, new_dimensions, interpolation=cv2.INTER_NEAREST)
+
+        # Menyimpan gambar hasil interpolasi Nearest Neighbor ke folder "static/uploads"
+        nearest_image_path = os.path.join(
+            app.config['UPLOAD'], 'nearest_neighbor_interpolated_image.jpg')
+        cv2.imwrite(nearest_image_path, img_nearest)
+
+        # Menghitung jumlah pixel di gambar asli dan gambar hasil interpolasi Nearest Neighbor
+        original_pixel_count = img.shape[0] * img.shape[1]
+        nearest_pixel_count = img_nearest.shape[0] * img_nearest.shape[1]
+
+        # Mengembalikan template dengan gambar asli, hasil interpolasi, dan jumlah pixel
+        return render_template('nearest_neighbor.html', img=img_path, img2=nearest_image_path, scale_factor=scale_factor, original_pixel_count=original_pixel_count, nearest_pixel_count=nearest_pixel_count)
+
+    # Menampilkan form jika metode request adalah GET
+    return render_template('nearest_neighbor.html')
 
 
 if __name__ == '__main__':

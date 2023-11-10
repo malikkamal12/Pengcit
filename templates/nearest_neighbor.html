@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nearest Neighbor Interpolation</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="text-lg bg-gray-900 font-Poppins">
+
+  <nav class="flex w-full flex-wrap items-center justify-between bg-gray-900 text-gray-500 py-3 shadow-lg mb-10 sticky top-0">
+    <div class="flex w-full flex-wrap items-center justify-between px-6 py-6 lg:px-6">
+        <button id="dropdownDefaultButton" data-dropdown-toggle="dropdown" class="hover:text-stone-700 hover:bg-white bg-gray-500 text-white focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">Menu<svg class="w-2.5 h-2.5 ml-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/></svg></button>
+        <!-- Dropdown menu -->
+        <div id="dropdown" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
+            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownDefaultButton">
+                <li>
+                    <a href="{{ url_for('histogram_equ') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Histogram Equalization</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('edge') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edge</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('face_blur') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Face Blur</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('segment') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Segmentation</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('enhancement') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Enhancement</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('noise') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Noise</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('erosion') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Erosion</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('bicubic') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Bicubic</a>
+                </li>
+                <li>
+                  <a href="{{ url_for('nearest_neighbor') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nearest Neighbor</a>
+                </li>
+            </ul>
+        </div>
+        <h3 class="font-bold text-3xl">PengCit</h3>
+        <h4 class="font-bold text-xl">Kelompok Apa Aja</h4>
+    </div>
+</nav>
+    
+    <section>
+        <h2 class="text-center lg:text-7xl md:text-6xl sm:text-5xl text-4xl font-medium py-16 mx-10 mb-12 bg-black bg-opacity-10 text-white rounded-xl">
+            Nearest Neighbor Interpolation
+        </h2>
+        <form action="{{ url_for('nearest_neighbor') }}" enctype="multipart/form-data" method="POST">
+            <div class="mx-10">
+                <label for="formFile" class="mb-2 inline-block text-white text-xl">Input Image</label>
+                <div class="flex">
+                    <input name="img" id="img" accept=".jpg, .jpeg, .png" type="file" class="block w-full cursor-pointer rounded-lg bg-gray-200 text-black file:mr-4 file:text-neutral-700 dark:border-neutral-600" required>
+                    <input type="submit" class="px-10 py-2 text-base font-medium text-white bg-stone-700 rounded-md shadow-sm hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-stone-700" value="Upload and Interpolate">
+                </div>
+                <label for="scale-factor" class="mb-2 inline-block text-white text-xl mt-4">Scale Factor</label>
+                <input type="number" name="scale_factor" id="scale_factor" value="2.0" step="0.1" min="0.1" class="block w-full rounded-lg bg-gray-200 text-black" required>
+            </div>
+        </form>
+    </section>
+
+    <section class="mt-20">
+      <div class="flex justify-center">
+          <div class="mr-10">
+              {% if img %}
+              <h4 class="text-center font-medium text-xl text-white mb-6">Original Image</h4>
+              <img src="{{ img }}" alt="Original Image" class="w-[500px]" id="original-img">
+              <p class="text-center text-white mt-2">Original Pixel count: {{ original_pixel_count }}</p>
+              {% endif %}
+          </div>
+          <div class="flex justify-center">
+              <div class="mr-10">
+                  {% if img2 %}
+                  <h4 class="text-center font-medium text-xl text-white mb-6">Nearest Neighbor Interpolated Image</h4>
+                  <img src="{{ img2 }}" alt="Nearest Neighbor Interpolated Image" class="w-[500px]" id="nearest-img">
+                  <p class="text-center text-white mt-2">Interpolated Pixel Count: {{ nearest_pixel_count }}</p>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+  </section>
+
+    <!-- <section class="mt-20">
+        <div class="flex justify-center">
+            <div class="mr-10">
+                {% if img %}
+                <h4 class="text-center font-medium text-xl text-white mb-6">Original Image</h4>
+                <img src="{{ url_for('static', filename=img) }}" alt="Original Image" class="rounded-xl">
+                <p class="text-white text-center">Original Pixel Count: {{ original_pixel_count }}</p>
+                {% endif %}
+            </div>
+            <div>
+                {% if img2 %}
+                <h4 class="text-center font-medium text-xl text-white mb-6">Nearest Neighbor Interpolated Image</h4>
+                <img src="{{ url_for('static', filename=img2) }}" alt="Interpolated Image" class="rounded-xl">
+                <p class="text-white text-center">Interpolated Pixel Count: {{ nearest_pixel_count }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </section> -->
+      
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
+
+</body>
+</html>
