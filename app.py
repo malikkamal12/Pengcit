@@ -406,7 +406,7 @@ def nearest_neighbor():
         img = cv2.imread(img_path)
 
         # Mendapatkan faktor skala dari formulir
-        scale_factor = float(request.form.get('scale_factor', 2.0))
+        scale_factor = float(request.form.get('scale_factor', 3.0))
 
         # Menghitung dimensi baru berdasarkan faktor skala
         new_dimensions = (
@@ -430,6 +430,50 @@ def nearest_neighbor():
 
     # Menampilkan form jika metode request adalah GET
     return render_template('nearest_neighbor.html')
+
+
+def add_salt_and_pepper_noise(image, salt_prob, pepper_prob):
+    noisy_image = np.copy(image)
+    total_pixels = image.shape[0] * image.shape[1]
+
+    salt_pixels = int(total_pixels * salt_prob)
+    salt_coordinates = [np.random.randint(
+        0, i - 1, salt_pixels) for i in image.shape]
+    noisy_image[salt_coordinates[0], salt_coordinates[1]] = 255
+
+    pepper_pixels = int(total_pixels * pepper_prob)
+    pepper_coordinates = [np.random.randint(
+        0, i - 1, pepper_pixels) for i in image.shape]
+    noisy_image[pepper_coordinates[0], pepper_coordinates[1]] = 0
+
+    return noisy_image
+
+
+@app.route('/restoration', methods=['GET', 'POST'])
+def restoration():
+    if request.method == 'POST':
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Membaca gambar dengan OpenCV
+        img = cv2.imread(img_path)
+
+        # Menambahkan noise "salt and pepper" ke dalam citra
+        noise_img = add_salt_and_pepper_noise(
+            img, salt_prob=0.01, pepper_prob=0.01)
+
+        # Melakukan proses restorasi citra di sini (misalnya, dengan teknik denoising)
+
+        # Menyimpan gambar hasil restorasi ke folder "static/uploads"
+        restored_image_path = os.path.join(
+            app.config['UPLOAD'], 'restored_image.jpg')
+        cv2.imwrite(restored_image_path, noise_img)
+
+        return render_template('restoration.html', img=img_path, img2=restored_image_path)
+
+    return render_template('restoration.html')
 
 
 if __name__ == '__main__':

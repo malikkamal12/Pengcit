@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bicubic Interpolation</title>
+    <title>Restoration</title>
     <link rel="stylesheet" href="/static/css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 </head>
@@ -40,6 +40,9 @@
                     <li>
                       <a href="{{ url_for('nearest_neighbor') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nearest Neighbor</a>
                     </li>
+                    <li>
+                        <a href="{{ url_for('restoration') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Restoration</a>
+                      </li>
                 </ul>
             </div>
             <h3 class="font-bold text-3xl">PengCit</h3>
@@ -48,17 +51,13 @@
     </nav>
     
     <section>
-        <h2 class="text-center lg:text-7xl md:text-6xl sm:text-5xl text-4xl font-medium py-16 mx-10 mb-12 bg-black bg-opacity-10 text-white rounded-xl">Bicubic Interpolation</h2>
-        <form action="{{ url_for('bicubic') }}" enctype="multipart/form-data" method="POST">
+        <h2 class="text-center lg:text-7xl md:text-6xl sm:text-5xl text-4xl font-medium py-16 mx-10 mb-12 bg-black bg-opacity-10 text-white rounded-xl">Restoration</h2>
+        <form action="{{ url_for('restoration') }}" enctype="multipart/form-data" method="POST">
             <div class="mx-10">
                 <label for="formFile" class="mb-2 inline-block text-white text-xl">Input Image</label>
                 <div class="flex">
                     <input name="img" id="img" accept=".jpg, .jpeg, .png" type="file" class="m-0 block w-full min-w-0 flex-auto cursor-pointer rounded-lg  bg-clip-padding  py-[0.32rem] font-normal leading-[2.15] bg-gray-200 text-black transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-solid file:border-inherit file:bg-neutral-100 file:px-3 file:py-[0.32rem] file:text-neutral-700 file:transition file:duration-150 file:ease-in-out file:[border-inline-end-width:1px] file:[margin-inline-end:0.75rem] hover:file:bg-neutral-200 focus:border-primary focus:text-neutral-700 focus:shadow-te-primary focus:outline-none dark:border-neutral-600">
-                    <input type="submit" class="inline-flex items-center justify-center px-10 py-2 text-base font-medium leading-6 text-white whitespace-no-wrap bg-stone-700 border-stone-800 rounded-md shadow-[0_4px_9px_-4px_#a8a29e] hover:bg-stone-800 ml-4 hover:shadow-[0_8px_9px_-4px_#a8a29e,0_4px_18px_0_#a8a29e]" value="Upload and Interpolate">
-                </div>
-                <label for="scale_factor" class="mb-2 inline-block text-white text-xl mt-4">Scale Factor</label>
-                <input type="number" name="scale_factor" id="scale_factor" step="0.1" min="0.1" value="2.0" class="m-0 block w-full min-w-0 flex-auto cursor-pointer rounded-lg  bg-clip-padding  py-[0.32rem] font-normal leading-[2.15] bg-gray-200 text-black transition duration-300 ease-in-out file:-mx-3 file:-my-[0.32rem] file:cursor-pointer file:overflow-hidden file:rounded-none file:border-0 file:border-solid file:border-inherit file:bg-neutral-100 file:px-3 file:py-[0.32rem] file:text-neutral-700 file:transition file:duration-150 file:ease-in-out file:[border-inline-end-width:1px] file:[margin-inline-end:0.75rem] hover:file:bg-neutral-200 focus:border-primary focus:text-neutral-700 focus:shadow-te-primary focus:outline-none dark:border-neutral-600">
-            </div>
+                    <input type="submit" class="inline-flex items-center justify-center px-10 py-2 text-base font-medium leading-6 text-white whitespace-no-wrap bg-stone-700 border-stone-800 rounded-md shadow-[0_4px_9px_-4px_#a8a29e] hover:bg-stone-800 ml-4 hover:shadow-[0_8px_9px_-4px_#a8a29e,0_4px_18px_0_#a8a29e]" value="Submit">
         </form>
     </section>
 
@@ -67,8 +66,7 @@
         <div class="mr-10">
             {% if img %}
             <h4 class="text-center font-medium text-xl text-white mb-6">Original Image</h4>
-            <img src="{{ img }}" alt="Original Image" class="w-[700px]" id="original-img">
-            <p class="text-center text-white mt-2">Pixel count: {{ original_pixel_count }}</p>
+            <img src="{{ img }}" alt="Original Image" class="w-[500px]" id="original-img">
             {% endif %}
         </div>
         <div class="flex justify-center">
@@ -76,31 +74,12 @@
                 {% if img2 %}
                 <h4 class="text-center font-medium text-xl text-white mb-6">Bicubic Interpolated Image</h4>
                 <img src="{{ img2 }}" alt="Bicubic Interpolated Image" class="w-[500px]" id="bicubic-img">
-                <p class="text-center text-white mt-2">Pixel count: {{ bicubic_pixel_count }}</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </section>
 
-
-    <section class="mt-10">
-        {% if pixel_value is not none %}
-        <div class="flex justify-center">
-            <div class="mr-10">
-                <h4 class="text-center font-medium text-xl text-white mb-6">Pixel Value</h4>
-                <p class="text-center text-white">Pixel value at {{ pixel_value }}</p>
-            </div>
-        </div>
-        {% endif %}
-    </section>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
-    <script>
-        function display(value, id) {
-            // Menampilkan nilai pada elemen dengan ID yang sesuai
-            document.getElementById(id + "-value").innerHTML = value;
-        }
-    </script>
 </body>
 </html>
