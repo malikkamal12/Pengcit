@@ -476,5 +476,63 @@ def restoration():
     return render_template('restoration.html')
 
 
+@app.route('/chaincode', methods=['GET', 'POST'])
+def chaincode():
+    if request.method == 'POST':
+        file = request.files['img']
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD'], filename))
+        img_path = os.path.join(app.config['UPLOAD'], filename)
+
+        # Membaca gambar dengan OpenCV
+        # Konversi ke grayscale
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+
+        # Melakukan ekstraksi kontur objek pada citra
+        contours, _ = cv2.findContours(
+            img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if len(contours) == 0:
+            return "Tidak ada kontur ditemukan."
+
+        # Mengambil kontur pertama (Anda bisa melakukan loop untuk semua kontur)
+        contour = contours[0]
+
+        # Menghitung chain code untuk kontur
+        chain_codes = []
+        prev_point = contour[0][0]
+
+        for point in contour[1:]:
+            dx = point[0][0] - prev_point[0]
+            dy = point[0][1] - prev_point[1]
+
+            # Menentukan arah berdasarkan perbedaan koordinat
+            if dx == 0 and dy == 1:
+                chain_codes.append(0)
+            elif dx == 1 and dy == 1:
+                chain_codes.append(1)
+            elif dx == 1 and dy == 0:
+                chain_codes.append(2)
+            elif dx == 1 and dy == -1:
+                chain_codes.append(3)
+            elif dx == 0 and dy == -1:
+                chain_codes.append(4)
+            elif dx == -1 and dy == -1:
+                chain_codes.append(5)
+            elif dx == -1 and dy == 0:
+                chain_codes.append(6)
+            elif dx == -1 and dy == 1:
+                chain_codes.append(7)
+
+            prev_point = point[0]
+
+        # Menyimpan chain code sebagai teks
+        chain_code_text = ' '.join(map(str, chain_codes))
+
+        return render_template('chaincode.html', img=img_path, chain_code=chain_code_text)
+
+    return render_template('chaincode.html')
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8001)
